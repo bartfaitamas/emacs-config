@@ -1,0 +1,6 @@
+/elpa/
+/etc/
+/var/
+/eln-cache/
+*.elc
+/local.el
