@@ -30,6 +30,7 @@
 (require 'lt-lsp)
 (require 'lt-lang-scala)
 (require 'lt-lang-haskell)
+(require 'lt-lang-android)
 (require 'lt-lang-extra)
 (require 'lt-formats)
 (require 'lt-nix)

@@ -19,7 +19,6 @@
   :init
   (add-to-list 'major-mode-remap-alist '(scala-mode . scala-ts-mode))
   :interpreter ("scala" . scala-ts-mode)
-  :custom (treesit-font-lock-level 4)
   :hook (scala-ts-mode . (lambda () (show-paren-mode)))
   :config
   (add-to-list 'auto-mode-alist '("\\.\\(scala\\|sbt\\|worksheet\\.sc\\)\\'" . scala-ts-mode)))

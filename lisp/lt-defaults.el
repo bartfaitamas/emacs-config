@@ -56,6 +56,8 @@
 ;; don't wrap long lines by default
 (setq-default truncate-lines t)
 
+(setq treesit-font-lock-level 4)
+
 ;; y/n for yes/no
 (setq use-short-answers t) ;; emacs28
 ;;(defalias 'yes-or-no-p 'y-or-n-p)
