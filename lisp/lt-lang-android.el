@@ -95,6 +95,15 @@
     :new-connection (lsp-stdio-connection '("kotlin-lsp" "--stdio"))
     :major-modes '(kotlin-mode kotlin-ts-mode)
     :priority 0
+    ;; IntelliJ-specific notifications lsp-mode would warn about.
+    :notification-handlers
+    (let ((handlers (make-hash-table :test #'equal)))
+      (dolist (method '("intellij/workspaceImportStatus"
+                        "intellij/workspaceImportState"
+                        "intellij/importLog"
+                        "intellij/ready-for-test"))
+        (puthash method #'ignore handlers))
+      handlers)
     :server-id 'kotlin-lsp)))
 
 ;;;; Java
