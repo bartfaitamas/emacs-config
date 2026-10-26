@@ -7,7 +7,7 @@
   :demand t
   :mode (("\\.org$" . org-mode))
   :bind (("C-c o c" . org-capture)
-         ("C-c o a" . org-agenda))
+         ("C-c o t" . lt/org-capture-task))
 
   :hook
   (org-mode . org-indent-mode)
@@ -48,7 +48,9 @@
         org-agenda-files (list (expand-file-name "Inbox.org" org-directory))
         ;; Org styling, hide markup etc.
         org-agenda-tags-column 0
-        org-refile-targets '((nil . (:maxlevel . 4))))
+        org-refile-targets '((nil . (:maxlevel . 4)))
+        org-todo-keywords '((sequence "TODO" "INPROGRESS" "|" "DONE" "CANCELLED"))
+        org-archive-location "Archive/%s::")
 
   (require 'org-capture)
   (require 'org-protocol)
@@ -64,6 +66,7 @@
   (add-to-list 'org-structure-template-alist '("puml" . "src plantuml"))
   (add-to-list 'org-structure-template-alist '("e" . "example"))
   (add-to-list 'org-structure-template-alist '("C" . "comment"))
+  (add-to-list 'org-structure-template-alist '("scala" . "src scala :scala-version lts"))
 
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -78,11 +81,7 @@
   ;;;; Thank you random guy from StackOverflow
   ;;;; http://stackoverflow.com/questions/23517372/hook-or-advice-when-aborting-org-capture-before-template-selection
   ;;;; https://fuco1.github.io/2017-09-02-Maximize-the-org-capture-buffer.html
-  (defadvice org-capture
-      (after make-full-window-frame activate)
-    "Advise capture to be the only window when used as a popup"
-    (if (equal "org-protocol-capture" (frame-parameter nil 'name))
-        (delete-other-windows)))
+  (advice-add 'org-capture :after #'lt/org-capture--maximize-popup)
 
   (add-hook 'org-capture-after-finalize-hook #'lt/org-capture-cleanup-when-org-protocol)
 
@@ -91,9 +90,7 @@
   ;; where &rest is properties
   (add-to-list
    'org-capture-templates
-   '("t" "Todo" entry (file "Inbox.org")
-     "* TODO %?\n   :PROPERTIES:\n   %t\n   :END:\n   %i\n    %a\n"
-     :prepend t)))
+   '("t" "PARA task" entry (file "Inbox.org") (function vulpea-para-capture-task-template) :prepend t)))
 
 (use-package ob-mermaid)
 
@@ -107,6 +104,16 @@
 (use-package verb)
 
 ;; ------- end of vulpea
+
+(defun lt/org-capture--maximize-popup (&rest _)
+  "Make the capture buffer the only window in an org-protocol popup frame."
+  (when (equal "org-protocol-capture" (frame-parameter nil 'name))
+    (delete-other-windows)))
+
+(defun lt/org-capture-task ()
+  "Capture a task using the 't' `org-capture' template."
+  (interactive)
+  (org-capture nil "t"))
 
 (defun lt/org-capture-cleanup-when-org-protocol ()
   "Clean up the frame created while capturing via org-protocol."

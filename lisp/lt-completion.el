@@ -2,7 +2,9 @@
 ;;; Commentary:
 ;;; Code:
 
-
+(setq enable-recursive-minibuffers t
+      completion-cycle-threshold 3
+      tab-always-indent 'complete)
 
 (use-package corfu
   ;; (:with-map corfu-map
@@ -45,7 +47,8 @@
   :config
   (marginalia-mode))
 
-(use-package embark-consult)
+(use-package embark-consult
+  :hook (embark-collect-mode . consult-preview-at-point-mode))
 
 ;; TODO: review which-key usage in the original
 (use-package embark

@@ -47,6 +47,34 @@
   :config
   (windmove-default-keybindings))
 
+(defun lt/split-window-left (&optional size window-to-split)
+  "Split WINDOW-TO-SPLIT, creating a new window on its left.
+WINDOW-TO-SPLIT defaults to the selected window.  Positive SIZE sets the
+width of WINDOW-TO-SPLIT, negative SIZE the width of the new window.
+Return the new window."
+  (interactive `(,(when current-prefix-arg
+                   (prefix-numeric-value current-prefix-arg))
+                 ,(selected-window)))
+  (let (new-window)
+    (when (and size (< size 0) (< (- size) window-min-width))
+      ;; `split-window' would not signal an error here
+      (error "Size of new window too small"))
+    (setq new-window (split-window window-to-split size 'left))
+    ;; Always copy quite-restore parameter in interactive use.
+    (let ((quit-restore (window-parameter window-to-split 'quit-restore)))
+      (when quit-restore
+        (set-window-parameter new-window 'quit-restore quit-restore)))
+    new-window))
+
+;; TODO: take side window into consideration somehow
+(defun lt/split-root-window-left (&optional size)
+  "Split the frame's root window, creating a full-height window on the left.
+SIZE is as in `lt/split-window-left'."
+  (interactive `(,(when current-prefix-arg
+                    (prefix-numeric-value current-prefix-arg))))
+  (lt/split-window-left size (frame-root-window)))
+
+
 ;; TODO: Setup corfu, vertico, orderless, marginalia, embark
 (use-package ace-window
   :bind
@@ -56,6 +84,20 @@
    ("C-c w D" . ace-delete-other-windows))
   :init
   (which-key-add-key-based-replacements "C-c w" "window"))
+
+(use-package popper
+  :bind (("C-`" . popper-toggle)
+         ("M-`" . popper-cycle)
+         ("C-M-`" . popper-toggle-type))
+  :init
+  (setq popper-reference-buffers
+        '("\\*Messages\\*"
+          "Output\\*$"
+          "\\*Async Shell Command\\*"
+          help-mode
+          compilation-mode))
+  (popper-mode +1)
+  (popper-echo-mode +1))
 
 (provide 'lt-window)
 ;;; lt-window.el ends here

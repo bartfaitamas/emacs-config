@@ -21,7 +21,7 @@
 ;; here is safe on a machine that has a different set.
 (set-face-attribute 'default nil
                     :family "Iosevka Term"
-                    :height 110
+                    :height (if (eq system-type 'darwin) 150 110)
                     :weight 'medium)
 
 ;; Prose, in org and elsewhere.
@@ -53,6 +53,10 @@
   (setq spacious-padding-subtle-frame-lines t)
   (spacious-padding-mode 1))
 
+(use-package beacon
+  :config
+  (setq beacon-blink-when-window-scroll nil)
+  (beacon-mode 1))
 
 (use-package delight)
 (use-package modus-themes

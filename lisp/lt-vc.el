@@ -23,6 +23,9 @@
 (use-package forge
   :after (magit))
 
+(use-package git-gutter
+  :config (global-git-gutter-mode))
+
 (with-eval-after-load 'project
   (which-key-add-key-based-replacements "C-x p m" "magit")
   (keymap-set project-prefix-map "m" #'magit-project-status)

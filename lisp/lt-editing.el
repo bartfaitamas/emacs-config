@@ -75,6 +75,10 @@
 (use-package outline
   :ensure nil ; built-in
   :hook ((prog-mode . outline-minor-mode))
+  :bind (:map outline-minor-mode-map
+              ("C-c f n" . outline-next-heading)
+              ("C-c f p" . outline-previous-heading)
+              ("C-c f u" . outline-up-heading))
   :config
   ;; outline-cycle                     (<right-margin> <mouse-1>)
   ;; outline-cycle-buffer              (<right-margin> S-<mouse-1>)
@@ -118,6 +122,27 @@
 (use-package yasnippet
   :hook
   (prog-mode . yas-minor-mode))
+
+(use-package hideshow
+  :ensure nil
+  :hook (prog-mode . hs-minor-mode)
+  :bind (:map hs-minor-mode-map
+              ("C-c f t" . hs-toggle-hiding)
+              ("C-c f h" . hs-hide-block)
+              ("C-c f s" . hs-show-block)
+              ("C-c f H" . hs-hide-all)
+              ("C-c f S" . hs-show-all)))
+
+(use-package valign
+  :hook (markdown-mode . valign-mode))
+
+(add-hook 'compilation-filter-hook 'ansi-color-compilation-filter)
+
+(require 'ansi-color)
+(defun display-ansi-colors ()
+  "Apply ANSI color codes to the entire current buffer."
+  (interactive)
+  (ansi-color-apply-on-region (point-min) (point-max)))
 
 (provide 'lt-editing)
 ;;; lt-editing.el ends here

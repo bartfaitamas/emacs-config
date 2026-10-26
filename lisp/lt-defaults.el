@@ -41,7 +41,7 @@
 (require 'whitespace)
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
-(menu-bar-mode -1)
+(unless (eq system-type 'darwin) (menu-bar-mode -1))
 (when (fboundp 'tool-bar-mode)
   (tool-bar-mode -1))
 (when (fboundp 'scroll-bar-mode)

@@ -18,9 +18,18 @@
          ("\\.scala\\'" . scala-ts-mode))
   :init
   (add-to-list 'major-mode-remap-alist '(scala-mode . scala-ts-mode))
+  ;; scala-ts-mode does not say where its grammar comes from, so a machine
+  ;; without packaged grammar cannot install it.
+  (with-eval-after-load 'treesit
+    (add-to-list 'treesit-language-source-alist
+                 '(scala "https://github.com/tree-sitter/tree-sitter-scala")))
   :interpreter ("scala" . scala-ts-mode)
   :hook (scala-ts-mode . (lambda () (show-paren-mode)))
   :config
+  ;; Runs while the first Scala file autoloads the mode, before the mode
+  ;; checks for the grammar; offers to install it when it is missing
+  (when (fboundp 'treesit-ensure-installed)
+    (treesit-ensure-installed 'scala))
   (add-to-list 'auto-mode-alist '("\\.\\(scala\\|sbt\\|worksheet\\.sc\\)\\'" . scala-ts-mode)))
 
 
@@ -42,6 +51,8 @@
 
 ;; Add metals backend for lsp-mode
 (use-package lsp-metals
+  :init
+  (setq lsp-metals-multi-root nil)
   :custom
   ;; ;; You might set metals server options via -J arguments. This might not always work, for instance when
   ;; ;; metals is installed using nix. In this case you can use JAVA_TOOL_OPTIONS environment variable.
@@ -68,7 +79,7 @@
 
 ;;;; Metals MCP, and the preset that uses it
 
-(defun lt-scala-metals-connect ()
+(defun lt/scala-metals-connect ()
   "Connect to the current project's Metals MCP server.
 Reads the server URL from `.metals/mcp.json' in the project root,
 registers it in `mcp-hub-servers' as \"<project>-metals\", and starts
@@ -106,15 +117,15 @@ MCP tools in that buffer."
         (mcp-hub--start-server (cons server-name (list :url url)) nil t)
         (message "Metals MCP server started. Run gptel-mcp-connect in a gptel buffer to activate tools")))))
 
-(defun lt-scala--metals-connect-safe ()
+(defun lt/scala--metals-connect-safe ()
   "Connect to Metals MCP for use in a preset `:post' hook.
 Swallows the `user-error' raised when `.metals/mcp.json' is absent, so
 applying the preset is not aborted."
   (condition-case nil
-      (lt-scala-metals-connect)
+      (lt/scala-metals-connect)
     (user-error nil)))
 
-(defvar lt-scala-dev-system-prompt
+(defvar lt/scala-dev-system-prompt
   "You are a Scala development assistant. You work within a Scala/sbt project and produce high-quality, idiomatic Scala code. You prefer a purely functional programming style, favoring immutability, pure functions, and effect types where appropriate.
 
 * sbt Best Practices
@@ -163,15 +174,44 @@ After edits: format (`format-file` MCP or `sbt --client scalafmtAll`), compile (
   (require 'gptel-integrations)
   (gptel-make-preset 'scala-dev
     :description "Scala development with sbt/Metals."
-    :post #'lt-scala--metals-connect-safe
+    :post #'lt/scala--metals-connect-safe
     :tools '("Read" "Edit" "Insert" "Glob" "Grep" "Bash" "Eval"
              "WebSearch" "WebFetch" "TodoWrite" "Agent" "AskUserQuestion")
-    :system lt-scala-dev-system-prompt
+    :system lt/scala-dev-system-prompt
     :use-tools t))
 
 (with-eval-after-load 'project
   (which-key-add-key-based-replacements "C-x p M" "metals-mcp")
-  (keymap-set project-prefix-map "M" #'lt-scala-metals-connect))
+  (keymap-set project-prefix-map "M" #'lt/scala-metals-connect))
+
+;;;;; sbt-helpers
+(defvar lt/scala-sbt-compile-on-save nil
+  "When non-nil, send Test/compile to sbt on every save.")
+
+(defun lt/scala-sbt-toggle-compile-on-save ()
+  "Toggle `lt/scala-sbt-compile-on-save' and report the new value."
+  (interactive)
+  (setq lt/scala-sbt-compile-on-save (not lt/scala-sbt-compile-on-save))
+  (message "lt/scala-sbt-compile-on-save: %s" lt/scala-sbt-compile-on-save))
+
+(defun lt/scala--sbt-compile-on-save ()
+  "Run Test/compile in sbt if `lt/scala-sbt-compile-on-save' is non-nil."
+  (when lt/scala-sbt-compile-on-save
+    (defvar sbt:save-some-buffers)
+    (let ((sbt:save-some-buffers nil))
+      (sbt-command "Test/compile"))))
+
+(defun lt/scala-sbt-scalafmt-only ()
+  "Format the current file using scalafmt via sbt."
+  (interactive)
+  (save-buffer)
+  (sbt-command (concat "scalafmtOnly " (buffer-file-name (buffer-base-buffer)))))
+
+(add-hook 'scala-ts-mode-hook
+  (lambda () (add-hook 'after-save-hook #'lt/scala--sbt-compile-on-save nil t)))
+
+(with-eval-after-load 'scala-ts-mode
+  (keymap-set scala-ts-mode-map "C-c C-v f" #'lt/scala-sbt-scalafmt-only))
 
 (provide 'lt-lang-scala)
 ;;; lt-lang-scala.el ends here
