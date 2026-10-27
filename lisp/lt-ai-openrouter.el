@@ -32,8 +32,8 @@
                         :models lt-openrouter-models)
         gptel-model 'z-ai/glm-5.3-flash))
 
-(with-eval-after-load 'gptel-magit
-  (setq gptel-magit-model 'deepseek/deepseek-v4-pro))
+(with-eval-after-load 'lt-gptel-magit
+  (setq lt-gptel-magit-model 'deepseek/deepseek-v4-pro))
 
 (with-eval-after-load 'agent-shell
   (setq agent-shell-opencode-authentication

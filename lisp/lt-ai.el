@@ -29,58 +29,15 @@
   :config
   (require 'gptel-integrations))
 
-(use-package gptel-magit
-  :ensure t
-  :hook (magit-mode . gptel-magit-install)
-
+(use-package lt-gptel-magit
+  :ensure nil
+  :after magit
   :config
-  (defun my/gptel-magit--request-filter-reasoning (orig-fn prompt &rest kwargs)
-    "Advice around `gptel-magit--request' to ignore reasoning blocks.
-OpenAI-compatible backends (e.g. OpenRouter) deliver reasoning content
-as `(reasoning . text)' cons cells to the callback, which gptel-magit
-doesn't handle — it passes the cons cell to `insert', causing
-`Wrong type argument: char-or-string-p'.  This wraps the callback to
-skip any non-string response.  Fixes both commit generation and
-diff-explain, which both go through `gptel-magit--request'."
-    (let ((cb (plist-get kwargs :callback)))
-      (apply orig-fn prompt
-             (if cb
-                 (plist-put kwargs :callback
-                            (lambda (response info)
-                              (when (stringp response)
-                                (funcall cb response info))))
-               kwargs))))
-
-  (advice-add 'gptel-magit--request :around
-              #'my/gptel-magit--request-filter-reasoning)
-
-  ;; Custom commit prompt: extend the default Conventional Commits prompt
-  ;; with strict bullet list formatting rules to prevent the LLM from
-  ;; starting continuation lines with "-" instead of indenting them.
-  (setq gptel-magit-commit-prompt
-        (concat gptel-magit-prompt-conventional-commits
-                "\n\n"
-                "When using bullet lists in the commit body, follow these "
-                "formatting rules strictly:\n"
-                "- Each bullet starts with \"- \"\n"
-                "- Each bullet MUST start at the beginning of a line\n"
-                "- Continuation lines of a bullet MUST be indented with 2 "
-                "spaces to align with the text after \"- \"\n"
-                "- Each bullet must be complete (ending with punctuation or "
-                "a closing parenthesis) before the next bullet starts\n"
-                "- NEVER start a continuation line with \"-\"\n"
-                "- Wrap lines at approximately 70 characters\n\n"
-                "Correct example:\n"
-                "- Use write-contents-functions + set-visited-file-name "
-                "(no key\n"
-                "  rebinding)\n"
-                "- Sanitize LLM response into a filesystem-safe slug "
-                "(50 char max)\n\n"
-                "Incorrect (do NOT do this):\n"
-                "- Use write-contents-functions + set-visited-file-name "
-                "(no key\n"
-                "- rebinding) Sanitize LLM response into a filesystem-safe "
-                "slug")))
+  (keymap-set git-commit-mode-map "M-g" #'lt-gptel-magit-generate-message)
+  (transient-append-suffix 'magit-commit #'magit-commit-create
+    '("g" "Generate commit" lt-gptel-magit-commit-generate))
+  (transient-append-suffix 'magit-diff #'magit-stash-show
+    '("x" "Explain" lt-gptel-magit-diff-explain)))
 
 
 (use-package gptel-agent
